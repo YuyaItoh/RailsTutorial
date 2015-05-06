@@ -2,6 +2,7 @@ class UsersController < ApplicationController
   before_action :signed_in_user,  only: [:index, :edit, :update, :destroy]
   before_action :correct_user,    only: [:edit, :update]
   before_action :admin_user,      only: :destroy
+  before_action :already_signed_in_user, only: [:create, :new]
 
   def index
     @users =  User.paginate(page: params[:page])
@@ -13,6 +14,7 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
   end
 
   def create
@@ -52,14 +54,6 @@ class UsersController < ApplicationController
 
     # Before actions
 
-    def signed_in_user
-      unless signed_in?
-        # リクエストのurlを保存しておく(app/helpers/sessions_helper.rb)
-        store_location
-        redirect_to signin_url, notice: "Please sign in."
-      end
-    end
-
     # current_userと編集対象のuserが一致しているかを判定
     def correct_user
       @user = User.find(params[:id])
@@ -69,5 +63,10 @@ class UsersController < ApplicationController
     # admin以外がdestroyアクションを実行したらroot_pathにリダイレクト
     def admin_user
       redirect_to(root_path) unless current_user.admin?
+    end
+
+    # サインイン済みのユーザがnew, createにアクセスした場合はリダイレクト
+    def already_signed_in_user
+      redirect_to(root_path) if signed_in?
     end
 end
