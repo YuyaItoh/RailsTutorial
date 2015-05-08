@@ -18,6 +18,13 @@ class User < ActiveRecord::Base
 
 # == association
   has_many :microposts, dependent: :destroy
+  has_many :relationships, foreign_key: "follower_id", dependent: :destroy
+  has_many :followed_users, through: :relationships, source: :followed
+
+  has_many :reverse_relationships,  foreign_key: "followed_id",
+                                    class_name:  "Relationship",
+                                    dependent:   :destroy
+  has_many :followers, through: :reverse_relationships, source: :follower
 
 # == validation
   validates :name, presence: true, length: { maximum: 50 }
@@ -29,11 +36,23 @@ class User < ActiveRecord::Base
   has_secure_password
   validates :password, length: { minimum: 6 }
 
-  # フィードを取得？
+  # フィードを取得
   def feed
-    # このコードは準備段階です
-    # 完全な実装は11章
-    Micropost.where("user_id=?", id)
+    Micropost.from_users_followed_by(self)
+  end
+
+  # ユーザをフォローしているか判定
+  def following?(other_user)
+    self.relationships.find_by(followed_id: other_user.id)
+  end
+
+  # Userを経由してrelationshipsテーブルの作成を行う
+  def follow!(other_user)
+    self.relationships.create!(followed_id: other_user.id)
+  end
+
+  def unfollow!(other_user)
+    self.relationships.find_by(followed_id: other_user.id).destroy
   end
 
   # 暗号化する前のトークン
