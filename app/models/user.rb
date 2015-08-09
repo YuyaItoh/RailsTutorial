@@ -56,16 +56,18 @@ class User < ActiveRecord::Base
   end
 
   # 暗号化する前のトークン
+  # トークン（usrlsafeなbase64文字列）を発行する
   def self.new_remember_token
     SecureRandom.urlsafe_base64
   end
 
+  # トークンをSHA1.hexdigestで暗号化する
   def self.encrypt(token)
     Digest::SHA1.hexdigest(token.to_s)
   end
 
   private 
-    # 暗号化したトークン
+    # 暗号化したトークンをremember_tokenとして作成する
     def create_remember_token
       self.remember_token = User.encrypt(User.new_remember_token)
     end
